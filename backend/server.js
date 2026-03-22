@@ -2,13 +2,28 @@ require('dotenv').config();
 
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
+
 
 const app = express();
 
 // ================= MIDDLEWARE =================
+const cors = require('cors');
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: function (origin, callback) {
+    // allow requests without origin (Postman etc.)
+    if (!origin) return callback(null, true);
+
+    // allow localhost + all vercel domains
+    if (
+      origin.includes("localhost") ||
+      origin.includes("vercel.app")
+    ) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
   credentials: true
 }));
 
