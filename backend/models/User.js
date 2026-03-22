@@ -5,12 +5,14 @@ const userSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+    trim: true,
   },
   email: {
     type: String,
     required: true,
     unique: true,
     lowercase: true,
+    trim: true,
   },
   password: {
     type: String,
@@ -25,40 +27,54 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'College',
   },
-  studentInfo: {
-    rollNumber: String,
-    department: String,
-    semester: Number,
-    year: Number,
-    courses: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Course',
-    }],
-  },
   facultyInfo: {
-    employeeId: String,
+    employeeId: {
+      type: String,
+      sparse: true,
+    },
     department: String,
     specialization: String,
     phone: String,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
+  studentInfo: {
+    rollNumber: {
+      type: String,
+      sparse: true,
+    },
+    department: String,
+    semester: Number,
+    year: Number,
+    courses: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course',
+      },
+    ],
   },
+}, {
+  timestamps: true,
 });
 
-// Hash password before saving
-userSchema.pre('save', async function(next) {
+// ======================
+// 🔥 HASH PASSWORD BEFORE SAVE
+// ======================
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-// Compare password method
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+// ======================
+// 🔥 COMPARE PASSWORD METHOD
+// ======================
+userSchema.methods.comparePassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
 };
+
+// Indexes
+userSchema.index({ email: 1 });
+userSchema.index({ role: 1 });
+userSchema.index({ collegeId: 1 });
 
 module.exports = mongoose.model('User', userSchema);

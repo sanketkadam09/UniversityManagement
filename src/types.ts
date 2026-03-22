@@ -1,12 +1,24 @@
 export type UserRole = 'university_admin' | 'college_admin' | 'student';
 
 export interface User {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   role: UserRole;
   collegeId?: string;
-  studentId?: string;
+  studentInfo?: {
+    rollNumber?: string;
+    department?: string;
+    semester?: number;
+    year?: number;
+    courses?: string[];
+  };
+  facultyInfo?: {
+    employeeId?: string;
+    department?: string;
+    specialization?: string;
+    phone?: string;
+  };
 }
 
 export interface College {

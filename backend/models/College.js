@@ -4,19 +4,24 @@ const collegeSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+    trim: true,
   },
   code: {
     type: String,
     required: true,
     unique: true,
+    uppercase: true,
+    trim: true,
   },
   address: {
     type: String,
     required: true,
+    trim: true,
   },
   dean: {
     type: String,
     required: true,
+    trim: true,
   },
   establishedYear: {
     type: Number,
@@ -30,10 +35,12 @@ const collegeSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+}, {
+  timestamps: true,
 });
+
+// Index for better query performance
+collegeSchema.index({ code: 1 });
+collegeSchema.index({ name: 1 });
 
 module.exports = mongoose.model('College', collegeSchema);

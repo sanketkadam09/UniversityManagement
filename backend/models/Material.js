@@ -4,8 +4,12 @@ const materialSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
+    trim: true,
   },
-  description: String,
+  description: {
+    type: String,
+    trim: true,
+  },
   course: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Course',
@@ -16,29 +20,40 @@ const materialSchema = new mongoose.Schema({
     ref: 'College',
     required: true,
   },
-  uploadedBy: {
+  faculty: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
   },
-  fileUrl: {
+  type: {
+    type: String,
+    enum: ['pdf', 'video', 'link', 'document', 'presentation'],
+    required: true,
+  },
+  url: {
     type: String,
     required: true,
   },
-  fileName: {
-    type: String,
-    required: true,
+  fileSize: {
+    type: Number, // in bytes
   },
-  fileType: {
-    type: String,
-    required: true,
-  },
-  fileSize: Number,
-  cloudinaryId: String,
-  createdAt: {
+  uploadedAt: {
     type: Date,
     default: Date.now,
   },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
+}, {
+  timestamps: true,
 });
+
+// Index for better query performance
+materialSchema.index({ course: 1 });
+materialSchema.index({ faculty: 1 });
+materialSchema.index({ college: 1 });
+materialSchema.index({ type: 1 });
+materialSchema.index({ isActive: 1 });
 
 module.exports = mongoose.model('Material', materialSchema);

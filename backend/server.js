@@ -1,47 +1,75 @@
+require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
-
-dotenv.config();
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// ================= MIDDLEWARE =================
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB Connected'))
-.catch((err) => console.error('❌ MongoDB Connection Error:', err));
+// ================= MONGODB CONNECTION =================
+let mongoConnected = false;
 
-// Routes
+const connectMongoDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 30000, // 30 seconds for server selection
+      socketTimeoutMS: 45000, // 45 seconds for socket operations
+      retryWrites: true,
+      w: 'majority',
+    });
+
+    mongoConnected = true;
+    console.log('✅ MongoDB Connected');
+
+  } catch (err) {
+    console.error('❌ MongoDB Connection Error:', err.message);
+    console.log('⏳ Retrying in 10 seconds...');
+    mongoConnected = false;
+    setTimeout(connectMongoDB, 10000); // Retry after 10 seconds
+  }
+};
+
+connectMongoDB();
+
+// ================= ROUTES =================
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/university', require('./routes/university'));
 app.use('/api/college', require('./routes/college'));
 app.use('/api/student', require('./routes/student'));
 app.use('/api/upload', require('./routes/upload'));
 
-// Health Check
+// ================= HEALTH CHECK =================
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
-});
-
-// Error Handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
-    success: false, 
-    message: err.message || 'Something went wrong!' 
+  res.json({ 
+    status: mongoConnected ? 'OK' : 'NO_DB',
+    message: mongoConnected 
+      ? 'Server running with MongoDB ✅' 
+      : 'Server running but MongoDB not connected ❌'
   });
 });
 
+// ================= ERROR HANDLER =================
+app.use((err, req, res, next) => {
+  console.error('🔥 ERROR:', err.stack);
+
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error'
+  });
+});
+
+// ================= START SERVER =================
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

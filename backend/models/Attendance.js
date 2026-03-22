@@ -30,13 +30,17 @@ const attendanceSchema = new mongoose.Schema({
     ref: 'College',
     required: true,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+}, {
+  timestamps: true,
 });
 
-// Compound index to prevent duplicate attendance for same student, course, and date
+// Index for better query performance
+attendanceSchema.index({ course: 1, date: 1 });
+attendanceSchema.index({ student: 1, date: 1 });
+attendanceSchema.index({ college: 1 });
+attendanceSchema.index({ markedBy: 1 });
+
+// Compound index to prevent duplicate attendance records
 attendanceSchema.index({ course: 1, student: 1, date: 1 }, { unique: true });
 
 module.exports = mongoose.model('Attendance', attendanceSchema);

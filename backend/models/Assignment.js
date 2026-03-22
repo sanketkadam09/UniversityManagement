@@ -4,10 +4,12 @@ const assignmentSchema = new mongoose.Schema({
   title: {
     type: String,
     required: true,
+    trim: true,
   },
   description: {
     type: String,
     required: true,
+    trim: true,
   },
   course: {
     type: mongoose.Schema.Types.ObjectId,
@@ -31,35 +33,45 @@ const assignmentSchema = new mongoose.Schema({
   maxMarks: {
     type: Number,
     required: true,
+    min: 1,
   },
-  attachments: [{
-    url: String,
-    filename: String,
-    cloudinaryId: String,
-  }],
   submissions: [{
     student: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+      required: true,
     },
-    submittedAt: Date,
+    submittedAt: {
+      type: Date,
+      default: Date.now,
+    },
     files: [{
-      url: String,
       filename: String,
-      cloudinaryId: String,
+      url: String,
+      size: Number,
     }],
-    marks: Number,
-    feedback: String,
+    marks: {
+      type: Number,
+      min: 0,
+    },
+    feedback: {
+      type: String,
+      trim: true,
+    },
     status: {
       type: String,
       enum: ['submitted', 'graded', 'late'],
       default: 'submitted',
     },
   }],
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+}, {
+  timestamps: true,
 });
+
+// Index for better query performance
+assignmentSchema.index({ course: 1 });
+assignmentSchema.index({ faculty: 1 });
+assignmentSchema.index({ college: 1 });
+assignmentSchema.index({ dueDate: 1 });
 
 module.exports = mongoose.model('Assignment', assignmentSchema);

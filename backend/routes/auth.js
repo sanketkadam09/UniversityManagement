@@ -4,30 +4,46 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
 
-// Generate JWT Token
+// ================= GENERATE TOKEN =================
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
 
-// @route   POST /api/auth/register
-// @desc    Register a new user
-// @access  Public
+// ================= REGISTER =================
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role, collegeId, studentInfo, facultyInfo } = req.body;
+    let {
+      name,
+      email,
+      password,
+      role,
+      collegeId,
+      studentInfo,
+      facultyInfo
+    } = req.body;
 
-    // Check if user already exists
+    // 🔍 Validation
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide all required fields',
+      });
+    }
+
+    email = email.toLowerCase().trim();
+
+    // 🔍 Check existing user
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists with this email',
+        message: 'User already exists',
       });
     }
 
-    // Create user
+    // ✅ Create user (password auto hashed via model)
     const user = await User.create({
       name,
       email,
@@ -42,32 +58,33 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       success: true,
+      message: 'User registered successfully',
       data: {
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        collegeId: user.collegeId,
         token,
       },
     });
+
   } catch (error) {
-    console.error('Register error:', error);
+    console.error('❌ Register error:', error.message);
+
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || 'Registration failed',
     });
   }
 });
 
-// @route   POST /api/auth/login
-// @desc    Login user
-// @access  Public
+
+// ================= LOGIN =================
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
 
-    // Validate email and password
+    // 🔍 Validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -75,30 +92,39 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Find user by email
+    email = email.toLowerCase().trim();
+
+    console.log(`📌 Login attempt: ${email}`);
+
+    // 🔍 Find user
     const user = await User.findOne({ email }).select('+password');
 
     if (!user) {
+      console.log('❌ User not found');
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials',
       });
     }
 
-    // Check password
+    // 🔐 Compare password (bcrypt)
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
+      console.log('❌ Wrong password');
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials',
       });
     }
+
+    console.log('✅ Login successful');
 
     const token = generateToken(user._id);
 
     res.json({
       success: true,
+      message: 'Login successful',
       data: {
         _id: user._id,
         name: user.name,
@@ -110,28 +136,38 @@ router.post('/login', async (req, res) => {
         token,
       },
     });
+
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error.message);
+
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || 'Login failed',
     });
   }
 });
 
-// @route   GET /api/auth/me
-// @desc    Get current logged in user
-// @access  Private
+
+// ================= GET CURRENT USER =================
 router.get('/me', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate('collegeId');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
 
     res.json({
       success: true,
       data: user,
     });
+
   } catch (error) {
-    console.error('Get me error:', error);
+    console.error('❌ Get user error:', error.message);
+
     res.status(500).json({
       success: false,
       message: error.message,

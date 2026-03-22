@@ -1,29 +1,30 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { UserRole } from '../types';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('student');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     
-    const success = login(email, password, role);
-    if (!success) {
-      setError('Invalid credentials. Use password: "password"');
+    try {
+      const success = await login(email, password);
+      if (!success) {
+        setError('Invalid credentials. Please check your email and password.');
+      }
+      // On success, the auth state will update and App.tsx will re-render to show dashboard
+    } catch (err) {
+      setError('Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  const demoCredentials = [
-    { role: 'university_admin' as UserRole, email: 'admin@university.edu', label: 'University Admin' },
-    { role: 'college_admin' as UserRole, email: 'college@admin.edu', label: 'College Admin' },
-    { role: 'student' as UserRole, email: 'student@edu.com', label: 'Student' },
-  ];
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
@@ -38,22 +39,10 @@ export default function Login() {
             </div>
             <h1 className="text-3xl font-bold text-gray-900">University Portal</h1>
             <p className="text-gray-600 mt-2">Sign in to your account</p>
+            <p className="text-xs text-gray-500 mt-1">Your role will be determined by your account</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as UserRole)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="university_admin">University Admin</option>
-                <option value="college_admin">College Admin</option>
-                <option value="student">Student</option>
-              </select>
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
               <input
@@ -86,29 +75,63 @@ export default function Login() {
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all shadow-lg"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all shadow-lg disabled:opacity-50"
             >
-              Sign In
+              {isLoading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 
           <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-600 mb-3 font-medium">Demo Credentials (password: "password"):</p>
-            <div className="space-y-2">
-              {demoCredentials.map((cred) => (
-                <button
-                  key={cred.role}
-                  onClick={() => {
-                    setEmail(cred.email);
-                    setPassword('password');
-                    setRole(cred.role);
-                  }}
-                  className="w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm transition-colors"
-                >
-                  <span className="font-medium text-gray-900">{cred.label}:</span>
-                  <span className="text-gray-600 ml-2">{cred.email}</span>
-                </button>
-              ))}
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Available Roles:</h3>
+            <div className="space-y-3">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="flex items-center justify-center h-6 w-6 rounded-full bg-blue-100">
+                    <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">University Admin</p>
+                  <p className="text-xs text-gray-600">Manage all colleges and system settings</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="flex items-center justify-center h-6 w-6 rounded-full bg-indigo-100">
+                    <svg className="h-4 w-4 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">College Admin</p>
+                  <p className="text-xs text-gray-600">Manage courses, faculty, and students</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="flex items-center justify-center h-6 w-6 rounded-full bg-purple-100">
+                    <svg className="h-4 w-4 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10.5 1.5H5.75A2.75 2.75 0 003 4.25v11.5A2.75 2.75 0 005.75 18.5h8.5a2.75 2.75 0 002.75-2.75V6.5m-11-4v3m6-3v3m-6 2h12M5 14h10" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Student</p>
+                  <p className="text-xs text-gray-600">View courses, attendance, and results</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+              <p className="text-xs text-blue-900">
+                <span className="font-semibold">Note:</span> Your role is determined by your account in the system. Enter your email and password to login with your assigned role.
+              </p>
             </div>
           </div>
         </div>

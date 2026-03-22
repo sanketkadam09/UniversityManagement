@@ -4,15 +4,19 @@ const programSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+    trim: true,
   },
   code: {
     type: String,
     required: true,
     unique: true,
+    uppercase: true,
+    trim: true,
   },
   degree: {
     type: String,
     required: true,
+    enum: ['B.Tech', 'M.Tech', 'BBA', 'MBA', 'B.Sc', 'M.Sc', 'BA', 'MA'],
   },
   duration: {
     type: String,
@@ -23,12 +27,17 @@ const programSchema = new mongoose.Schema({
     ref: 'College',
     required: true,
   },
-  department: String,
-  description: String,
-  createdAt: {
-    type: Date,
-    default: Date.now,
+  department: {
+    type: String,
+    required: true,
   },
+}, {
+  timestamps: true,
 });
+
+// Index for better query performance
+programSchema.index({ code: 1 });
+programSchema.index({ college: 1 });
+programSchema.index({ department: 1 });
 
 module.exports = mongoose.model('Program', programSchema);

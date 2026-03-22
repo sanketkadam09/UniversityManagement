@@ -19,36 +19,47 @@ const resultSchema = new mongoose.Schema({
   semester: {
     type: Number,
     required: true,
+    min: 1,
+    max: 8,
   },
   examType: {
     type: String,
+    enum: ['Mid-Term', 'End-Term', 'Final', 'Quiz', 'Assignment', 'Lab'],
     required: true,
-    enum: ['Mid-Term', 'End-Term', 'Final', 'Quiz', 'Assignment'],
   },
   totalMarks: {
     type: Number,
     required: true,
+    min: 0,
   },
   obtainedMarks: {
     type: Number,
     required: true,
+    min: 0,
   },
   grade: {
     type: String,
+    enum: ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D', 'F'],
     required: true,
   },
   gpa: {
     type: Number,
     required: true,
+    min: 0,
+    max: 10,
   },
-  publishedDate: {
-    type: Date,
-    default: Date.now,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+}, {
+  timestamps: true,
 });
+
+// Index for better query performance
+resultSchema.index({ student: 1, course: 1 });
+resultSchema.index({ student: 1, semester: 1 });
+resultSchema.index({ course: 1 });
+resultSchema.index({ college: 1 });
+resultSchema.index({ examType: 1 });
+
+// Compound index to prevent duplicate results
+resultSchema.index({ student: 1, course: 1, examType: 1, semester: 1 }, { unique: true });
 
 module.exports = mongoose.model('Result', resultSchema);
